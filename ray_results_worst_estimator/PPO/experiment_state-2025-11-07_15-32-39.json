@@ -1,0 +1,113 @@
+{
+  "checkpoints": [
+    {
+      "trainable_name": "PPO",
+      "trial_id": "9c821b40",
+      "config": {
+        "env": "WorstEstimatorEnv",
+        "env_config": {
+          "od_csv": "/home/sdc_joran/Athena Data/data/aoi_od_pairs_group1.csv",
+          "alpha": 1.0,
+          "beta": 1.0,
+          "tl_result_dir": "/path/to/your/ray_results/experiment_dir/result_dir",
+          "tl_ckpt": "000500"
+        },
+        "num_workers": 0,
+        "num_gpus": 0,
+        "framework": "tf",
+        "train_batch_size": 2,
+        "sgd_minibatch_size": 2,
+        "num_sgd_iter": 2,
+        "model": {
+          "fcnet_hiddens": [
+            64,
+            64
+          ],
+          "fcnet_activation": "tanh"
+        }
+      },
+      "local_dir": "/home/sdc_joran/flow/ray_results_worst_estimator/PPO",
+      "evaluated_params": {},
+      "experiment_tag": "0",
+      "address": {
+        "_type": "CLOUDPICKLE_FALLBACK",
+        "value": "8004953a000000000000008c0e7261792e74756e652e747269616c948c084c6f636174696f6e9493942981947d94288c08686f73746e616d65944e8c03706964944e75622e"
+      },
+      "resources": {
+        "cpu": 1,
+        "gpu": 0,
+        "memory": 0,
+        "object_store_memory": 0,
+        "extra_cpu": 0,
+        "extra_gpu": 0,
+        "extra_memory": 0,
+        "extra_object_store_memory": 0,
+        "custom_resources": {},
+        "extra_custom_resources": {}
+      },
+      "stopping_criterion": {
+        "training_iteration": 3
+      },
+      "loggers": "80044e2e",
+      "sync_to_driver_fn": "80044e2e",
+      "verbose": true,
+      "max_failures": 0,
+      "last_result": {},
+      "last_update_time": -Infinity,
+      "checkpoint_freq": 0,
+      "checkpoint_at_end": false,
+      "metric_analysis": {},
+      "sync_on_checkpoint": true,
+      "checkpoint_manager": {
+        "_type": "CLOUDPICKLE_FALLBACK",
+        "value": "8004951d010000000000008c1b7261792e74756e652e636865636b706f696e745f6d616e61676572948c11436865636b706f696e744d616e616765729493942981947d94288c146b6565705f636865636b706f696e74735f6e756d94477ff00000000000008c165f636865636b706f696e745f73636f72655f6465736394898c165f636865636b706f696e745f73636f72655f61747472948c12747261696e696e675f697465726174696f6e948c116e65776573745f636865636b706f696e749468008c0a436865636b706f696e749493942981947d94288c0773746f72616765948c046469736b948c0576616c7565944e8c06726573756c74947d9475628c115f626573745f636865636b706f696e7473945d948c0b5f6d656d62657273686970948f9475622e"
+      },
+      "export_formats": [],
+      "status": "ERROR",
+      "start_time": 1762525959.1139014,
+      "logdir": "/home/sdc_joran/flow/ray_results_worst_estimator/PPO/PPO_WorstEstimatorEnv_9c821b40_2025-11-07_15-32-39l6kbqn_n",
+      "runner": null,
+      "result_logger": null,
+      "last_debug": 0,
+      "error_file": "/home/sdc_joran/flow/ray_results_worst_estimator/PPO/PPO_WorstEstimatorEnv_9c821b40_2025-11-07_15-32-39l6kbqn_n/error.txt",
+      "error_msg": "Traceback (most recent call last):\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/tune/ray_trial_executor.py\", line 222, in start_trial\n    self._start_trial(trial, checkpoint, remote_runner)\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/tune/ray_trial_executor.py\", line 155, in _start_trial\n    reuse_allowed=checkpoint is not None or trial.has_checkpoint())\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/tune/ray_trial_executor.py\", line 124, in _setup_remote_runner\n    return cls.remote(config=trial.config, logger_creator=logger_creator)\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/actor.py\", line 326, in remote\n    return self._remote(args=args, kwargs=kwargs)\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/actor.py\", line 468, in _remote\n    *copy.deepcopy(args), **copy.deepcopy(kwargs))\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/rllib/agents/trainer_template.py\", line 90, in __init__\n    Trainer.__init__(self, config, env, logger_creator)\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/rllib/agents/trainer.py\", line 398, in __init__\n    Trainable.__init__(self, config, logger_creator)\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/tune/trainable.py\", line 96, in __init__\n    self._setup(copy.deepcopy(self.config))\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/rllib/agents/trainer.py\", line 504, in _setup\n    self._allow_unknown_subkeys)\n  File \"/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/tune/util.py\", line 167, in deep_update\n    raise Exception(\"Unknown config parameter `{}` \".format(k))\nException: Unknown config parameter `framework` \n",
+      "num_failures": 2,
+      "custom_trial_name": null,
+      "results": "80044e2e",
+      "best_result": "80044e2e",
+      "param_config": "80044e2e",
+      "extra_arg": "80044e2e",
+      "_nonjson_fields": [
+        "checkpoint",
+        "loggers",
+        "sync_to_driver_fn",
+        "results",
+        "best_result",
+        "param_config",
+        "extra_arg"
+      ],
+      "checkpoint": "80044e2e",
+      "__logger_started__": false
+    }
+  ],
+  "runner_data": {
+    "_global_time_limit": Infinity,
+    "_total_time": 0,
+    "_iteration": 1,
+    "_verbose": true,
+    "_server_port": 4321,
+    "_local_checkpoint_dir": "/home/sdc_joran/flow/ray_results_worst_estimator/PPO",
+    "_remote_checkpoint_dir": null,
+    "_resumed": false,
+    "_start_time": 1762525959.0964398,
+    "_last_checkpoint_time": 1762525965.130566,
+    "_checkpoint_period": 10,
+    "_session_str": "2025-11-07_15-32-39",
+    "checkpoint_file": "/home/sdc_joran/flow/ray_results_worst_estimator/PPO/experiment_state-2025-11-07_15-32-39.json",
+    "launch_web_server": false
+  },
+  "stats": {
+    "start_time": 1762525959.0964398,
+    "timestamp": 1762525965.130566
+  }
+}

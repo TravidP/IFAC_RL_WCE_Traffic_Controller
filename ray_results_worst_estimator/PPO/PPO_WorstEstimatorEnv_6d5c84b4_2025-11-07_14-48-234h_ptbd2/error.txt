@@ -1,0 +1,29 @@
+Failure # 1 (occurred at 2025-11-07_14-48-24)
+Traceback (most recent call last):
+  File "/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/tune/trial_runner.py", line 426, in _process_trial
+    result = self.trial_executor.fetch_result(trial)
+  File "/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/tune/ray_trial_executor.py", line 378, in fetch_result
+    result = ray.get(trial_future[0], DEFAULT_GET_TIMEOUT)
+  File "/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/worker.py", line 1457, in get
+    raise value.as_instanceof_cause()
+ray.exceptions.RayTaskError(RayOutOfMemoryError): [36mray::IDLE[39m (pid=3541871, ip=145.90.173.66)
+  File "python/ray/_raylet.pyx", line 626, in ray._raylet.execute_task
+  File "python/ray/_raylet.pyx", line 627, in ray._raylet.execute_task
+  File "/home/sdc_joran/miniconda3/envs/flow/lib/python3.7/site-packages/ray/memory_monitor.py", line 130, in raise_if_low_memory
+    self.error_threshold))
+ray.memory_monitor.RayOutOfMemoryError: More than 95% of the memory on node sdc-1000060-2110363 is used (59.83 / 62.15 GB). The top 10 memory consumers are:
+
+PID	MEM	COMMAND
+1100542	45.41GiB	/home/sdc_joran/miniconda3/envs/flow/bin/python3.7 /home/sdc_joran/miniconda3/envs/flow/bin/tensorbo
+1097580	2.54GiB	/opt/google/chrome/chrome --type=renderer --crashpad-handler-pid=1097210 --enable-crash-reporter=739
+1096723	0.89GiB	/usr/share/code/code /home/sdc_joran/.vscode/extensions/ms-python.vscode-pylance-2025.9.1/dist/serve
+1096330	0.54GiB	/proc/self/exe --type=utility --utility-sub-type=node.mojom.NodeService --lang=en-US --service-sandb
+1097200	0.5GiB	/opt/google/chrome/chrome
+1099598	0.45GiB	/opt/google/chrome/chrome --type=renderer --crashpad-handler-pid=1097210 --enable-crash-reporter=739
+1004526	0.4GiB	/usr/bin/gnome-shell
+1096212	0.3GiB	/usr/share/code/code --type=zygote
+3541722	0.25GiB	python flow/visualize/train_worst_estimator.py
+3541871	0.23GiB	ray::IDLE
+
+In addition, up to 0.43 GiB of shared memory is currently being used by the Ray object store. You can set the object store size with the `object_store_memory` parameter when starting Ray, and the max Redis size with `redis_max_memory`. Note that Ray assumes all system memory is available for use by workers. If your system has other applications running, you should manually set these memory limits to a lower value.
+

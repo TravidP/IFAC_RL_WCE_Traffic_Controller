@@ -1234,9 +1234,9 @@ class InFlows:
         if "vehsPerHour" in kwargs:
             vehs_per_hour = deprecate("vehsPerHour", "vehs_per_hour")
         if "departLane" in kwargs:
-            depart_lane = deprecate("departLane", "depart_lane")
+            departLane = deprecate("depart_lane", "depart_lane")
         if "departSpeed" in kwargs:
-            depart_speed = deprecate("departSpeed", "depart_speed")
+            departSpeed = deprecate("depart_speed", "depart_speed")
 
         new_inflow = {
             "name": "%s_%d" % (name, len(self.__flows)),
@@ -1281,3 +1281,4 @@ class InFlows:
     def get(self):
         """Return the inflows of each edge."""
         return self.__flows
+

@@ -1,5 +1,6 @@
 """Contains all callable environments in Flow."""
 from flow.envs.base import Env
+from flow.envs.WorstEstimatorTrafficEnv import WorstEstimatorTrafficEnv
 from flow.envs.bay_bridge import BayBridgeEnv
 from flow.envs.bottleneck import BottleneckAccelEnv, BottleneckEnv, \
     BottleneckDesiredVelocityEnv
@@ -42,4 +43,5 @@ __all__ = [
     'DesiredVelocityEnv',
     'PO_TrafficLightGridEnv',
     'GreenWaveTestEnv',
+    "WorstEstimatorTrafficEnv"
 ]

@@ -1,0 +1,26 @@
+{
+  "clip_param": 0.2,
+  "env": "WorstEstimatorEnv",
+  "env_config": {
+    "alpha": 1.0,
+    "beta": 1.0,
+    "od_csv": "/home/sdc_joran/Athena Data/data/aoi_od_pairs_group1.csv",
+    "tl_ckpt": "000500",
+    "tl_result_dir": "/path/to/your/ray_results/experiment_dir/result_dir"
+  },
+  "framework": "tf",
+  "lambda": 0.95,
+  "lr": 5e-05,
+  "model": {
+    "fcnet_activation": "tanh",
+    "fcnet_hiddens": [
+      256,
+      256
+    ]
+  },
+  "num_gpus": 0,
+  "num_sgd_iter": 2,
+  "num_workers": 1,
+  "sgd_minibatch_size": 2,
+  "train_batch_size": 2
+}

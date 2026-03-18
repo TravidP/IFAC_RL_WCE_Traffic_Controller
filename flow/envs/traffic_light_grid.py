@@ -111,63 +111,108 @@ class TrafficLightGridEnv(Env):
 
     def __init__(self, env_params, sim_params, network, simulator='traci'):
 
-        for p in ADDITIONAL_ENV_PARAMS.keys():
-            if p not in env_params.additional_params:
-                raise KeyError(
-                    'Environment parameter "{}" not supplied'.format(p))
+            for p in ADDITIONAL_ENV_PARAMS.keys():
+                if p not in env_params.additional_params:
+                    raise KeyError(
+                        'Environment parameter "{}" not supplied'.format(p))
 
-        self.grid_array = network.net_params.additional_params["grid_array"]
-        self.rows = self.grid_array["row_num"]
-        self.cols = self.grid_array["col_num"]
-        # self.num_observed = self.grid_array.get("num_observed", 3)
-        self.num_traffic_lights = self.rows * self.cols
-        self.tl_type = env_params.additional_params.get('tl_type')
+            self.grid_array = network.net_params.additional_params["grid_array"]
+            self.rows = self.grid_array["row_num"]
+            self.cols = self.grid_array["col_num"]
+            # self.num_observed = self.grid_array.get("num_observed", 3)
+            self.num_traffic_lights = self.rows * self.cols
+            self.tl_type = env_params.additional_params.get('tl_type')
 
-        super().__init__(env_params, sim_params, network, simulator)
+            super().__init__(env_params, sim_params, network, simulator)
 
-        # Saving env variables for plotting
-        self.steps = env_params.horizon
-        self.obs_var_labels = {
-            'edges': np.zeros((self.steps, self.k.vehicle.num_vehicles)),
-            'velocities': np.zeros((self.steps, self.k.vehicle.num_vehicles)),
-            'positions': np.zeros((self.steps, self.k.vehicle.num_vehicles))
-        }
+            # Saving env variables for plotting
+            self.steps = env_params.horizon
+            self.obs_var_labels = {
+                'edges': np.zeros((self.steps, self.k.vehicle.num_vehicles)),
+                'velocities': np.zeros((self.steps, self.k.vehicle.num_vehicles)),
+                'positions': np.zeros((self.steps, self.k.vehicle.num_vehicles))
+            }
 
-        # Keeps track of the last time the traffic lights in an intersection
-        # were allowed to change (the last time the lights were allowed to
-        # change from a red-green state to a red-yellow state.)
-        self.last_change = np.zeros((self.rows * self.cols, 1))
-        # Keeps track of the direction of the intersection (the direction that
-        # is currently being allowed to flow. 0 indicates flow from top to
-        # bottom, and 1 indicates flow from left to right.)
-        self.direction = np.zeros((self.rows * self.cols, 1))
-        # Value of 1 indicates that the intersection is in a red-yellow state.
-        # value 0 indicates that the intersection is in a red-green state.
-        self.currently_yellow = np.zeros((self.rows * self.cols, 1))
+            # Keeps track of the last time the traffic lights in an intersection
+            # were allowed to change (the last time the lights were allowed to
+            # change from a red-green state to a red-yellow state.)
+            self.last_change = np.zeros((self.rows * self.cols, 1))
+            # Keeps track of the direction of the intersection (the direction that
+            # is currently being allowed to flow. 0 indicates flow from top to
+            # bottom, and 1 indicates flow from left to right.)
+            self.direction = np.zeros((self.rows * self.cols, 1))
+            # Value of 1 indicates that the intersection is in a red-yellow state.
+            # value 0 indicates that the intersection is in a red-green state.
+            self.currently_yellow = np.zeros((self.rows * self.cols, 1))
 
-        # when this hits min_switch_time we change from yellow to red
-        # the second column indicates the direction that is currently being
-        # allowed to flow. 0 is flowing top to bottom, 1 is left to right
-        # For third column, 0 signifies yellow and 1 green or red
-        self.min_switch_time = env_params.additional_params["switch_time"]
+            # when this hits min_switch_time we change from yellow to red
+            # the second column indicates the direction that is currently being
+            # allowed to flow. 0 is flowing top to bottom, 1 is left to right
+            # For third column, 0 signifies yellow and 1 green or red
+            self.min_switch_time = env_params.additional_params["switch_time"]
 
-        if self.tl_type != "actuated":
-            for i in range(self.rows * self.cols):
-                self.k.traffic_light.set_state(
-                    node_id='center' + str(i), state="GrGr")
-                self.currently_yellow[i] = 0
+            # --- NEW: debug toggles for TLS prints (OFF by default) ---
+            self.tls_debug = bool(env_params.additional_params.get("tls_debug", False))
+            # optional filter: list of center indices to print, e.g., [0, 4, 8]
+            self.tls_debug_nodes = set(env_params.additional_params.get("tls_debug_nodes", []))
 
-        # # Additional Information for Plotting
-        # self.edge_mapping = {"top": [], "bot": [], "right": [], "left": []}
-        # for i, veh_id in enumerate(self.k.vehicle.get_ids()):
-        #     edge = self.k.vehicle.get_edge(veh_id)
-        #     for key in self.edge_mapping:
-        #         if key in edge:
-        #             self.edge_mapping[key].append(i)
-        #             break
+            if self.tl_type != "actuated":
+                # expected #controlled links per junction from lanes (no get_state() here)
+                v = self.net_params.additional_params.get("vertical_lanes", 1)
+                h = self.net_params.additional_params.get("horizontal_lanes", 1)
+                L_default = 2 * v + 2 * h  # 8 when v=h=2
 
-        # check whether the action space is meant to be discrete or continuous
-        self.discrete = env_params.additional_params.get("discrete", False)
+                for i in range(self.rows * self.cols):
+                    node_id = f'center{i}'
+
+                    # (optional) select our static single-phase program "hold"
+                    try:
+                        self.k.kernel_api.trafficlight.setProgram(node_id, "hold")
+                    except Exception:
+                        pass  # OK if not available yet or already selected
+
+                    # safe initial state with correct length
+                    # NEW: ask SUMO what the current TLS state length is; fall back to links or L_default
+                    tl_api = self.k.kernel_api.trafficlight
+                    current_state = ""
+                    try:
+                        current_state = tl_api.getRedYellowGreenState(node_id)
+                    except Exception:
+                        current_state = ""
+                    state_len = len(current_state)
+                    if state_len == 0:
+                        try:
+                            state_len = len(tl_api.getControlledLinks(node_id))
+                        except Exception:
+                            state_len = L_default
+
+                    # Optional one-time debug to compare lengths (guarded)
+                    if self.tls_debug and (not self.tls_debug_nodes or i in self.tls_debug_nodes):
+                        links_len = 0
+                        try:
+                            links_len = len(tl_api.getControlledLinks(node_id))
+                        except Exception:
+                            links_len = -1
+                        print(f"[TLS init] {node_id}: state_len={state_len}, links={links_len}")
+
+                    self.k.traffic_light.set_state(node_id=node_id, state=("r" * state_len))
+
+                    self.currently_yellow[i] = 0
+
+
+
+            # # Additional Information for Plotting
+            # self.edge_mapping = {"top": [], "bot": [], "right": [], "left": []}
+            # for i, veh_id in enumerate(self.k.vehicle.get_ids()):
+            #     edge = self.k.vehicle.get_edge(veh_id)
+            #     for key in self.edge_mapping:
+            #         if key in edge:
+            #             self.edge_mapping[key].append(i)
+            #             break
+
+            # check whether the action space is meant to be discrete or continuous
+            self.discrete = env_params.additional_params.get("discrete", False)
+
 
     @property
     def action_space(self):

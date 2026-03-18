@@ -1,0 +1,22 @@
+{
+  "env": "WorstEstimatorEnv",
+  "env_config": {
+    "alpha": 1.0,
+    "beta": 1.0,
+    "od_csv": "/home/sdc_joran/Athena Data/data/aoi_od_pairs_group1.csv",
+    "tl_ckpt": "3454",
+    "tl_result_dir": "~/ray_results/grid_0_3x3_i4800_multiagent/PPO_MultiTrafficLightGridPOEnv-v1_0a4a3ca0_2025-11-04_13-51-54_yhihbzy"
+  },
+  "model": {
+    "fcnet_activation": "tanh",
+    "fcnet_hiddens": [
+      64,
+      64
+    ]
+  },
+  "num_gpus": 0,
+  "num_sgd_iter": 2,
+  "num_workers": 0,
+  "sgd_minibatch_size": 2,
+  "train_batch_size": 2
+}

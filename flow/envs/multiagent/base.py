@@ -101,6 +101,7 @@ class MultiEnv(MultiAgentEnv, Env):
             # crash encodes whether the simulator experienced a collision
             crash = self.k.simulation.check_collision()
 
+            # If too many crashes happen we can discard what his happening below
             # stop collecting new simulation steps if there is a collision
             if crash:
                 break
@@ -111,6 +112,11 @@ class MultiEnv(MultiAgentEnv, Env):
         if crash or (self.time_counter >= self.env_params.sims_per_step *
                      (self.env_params.warmup_steps + self.env_params.horizon)):
             done['__all__'] = True
+            # --- DEBUG LOGGING ---
+            if crash:
+                print(f"[EPISODE END] t={self.time_counter}s  REASON = COLLISION")
+            else:
+                print(f"[EPISODE END] t={self.time_counter}s  REASON = REACHED HORIZON ({self.env_params.horizon}s)")
         else:
             done['__all__'] = False
         infos = {key: {} for key in states.keys()}
@@ -241,6 +247,8 @@ class MultiEnv(MultiAgentEnv, Env):
         # update the information in each kernel to match the current state
         self.k.update(reset=True)
 
+
+
         # update the colors of vehicles
         if self.sim_params.render:
             self.k.vehicle.update_vehicle_colors()
@@ -254,15 +262,31 @@ class MultiEnv(MultiAgentEnv, Env):
             for veh_id in missing_vehicles:
                 msg += '- {}: {}\n'.format(veh_id, self.initial_state[veh_id])
             raise FatalFlowError(msg=msg)
-
+        
         # perform (optional) warm-up steps before training
+# call self traffic step
+        # ----------------------------------------------------
+        # Apply current OD-group inflow before warm-up steps
+        # (for worst-case training)
+        # ----------------------------------------------------
+        if hasattr(self, "_apply_group_flow") and hasattr(self, "current_group"):
+            self._apply_group_flow(self.current_group)
+        traffic_states=self.get_traffic_state() 
         for _ in range(self.env_params.warmup_steps):
-            observation, _, _, _ = self.step(rl_actions=None)
+            # observation, _, _, _ = self.step(rl_actions=None)
+            #initial 
+            self._spawn_step()
+            
+            traffic_actions=self._simulate_with_fixed_policy(traffic_states)
+            traffic_states, _, _, _ = self.traffic_step(traffic_actions)
 
         # render a frame
         self.render(reset=True)
-
-        return self.get_state()
+        # return self.get_state()
+        self.obs=self.get_state()
+        self.obs_traffic =self.get_traffic_state()
+        return self.obs
+# For worst case tranning I replace this with "get_traffic_state"
 
     def clip_actions(self, rl_actions=None):
         """Clip the actions passed from the RL agent.

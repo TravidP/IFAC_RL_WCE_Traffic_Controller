@@ -207,6 +207,7 @@ def visualizer_rllib(args):
         else:
             ret = 0
         for _ in range(env_params.horizon):
+            
             vehicles = env.unwrapped.k.vehicle
             speeds = vehicles.get_speed(vehicles.get_ids())
 
@@ -226,17 +227,29 @@ def visualizer_rllib(args):
                         action[agent_id] = agent.compute_action(
                             state[agent_id], policy_id=policy_map_fn(agent_id))
             else:
+                if isinstance(state, dict) and len(state) == 1:
+                    state = list(state.values())[0]
+    # ---------------------------------------------------------------
+
                 action = agent.compute_action(state)
             state, reward, done, _ = env.step(action)
             if multiagent:
                 for actor, rew in reward.items():
                     ret[policy_map_fn(actor)][0] += rew
             else:
-                ret += reward
-            if multiagent and done['__all__']:
-                break
-            if not multiagent and done:
-                break
+                # ----- FIX: allow reward={"worst": value} -----
+                if isinstance(reward, dict):
+                    # 取唯一的 reward 值
+                    reward_value = list(reward.values())[0]
+                else:
+                    reward_value = reward
+                # ----------------------------------------------
+                ret += reward_value
+                # ret += reward
+            # if multiagent and done['__all__']:
+            #     break
+            # if not multiagent and done:
+            #     break
 
         if multiagent:
             for key in rets.keys():

@@ -12,7 +12,7 @@ import os
 import sys
 from time import strftime
 from copy import deepcopy
-
+import ray
 from flow.core.util import ensure_dir
 from flow.utils.registry import env_constructor
 from flow.utils.rllib import FlowParamsEncoder, get_flow_params
@@ -47,7 +47,7 @@ def parse_args(args):
         '--num_cpus', type=int, default=1,
         help='How many CPUs to use')
     parser.add_argument(
-        '--num_steps', type=int, default=5000,
+        '--num_steps', type=int, default=10000,
         help='How many total steps to perform learning over')
     parser.add_argument(
         '--rollout_size', type=int, default=1000,
@@ -145,14 +145,32 @@ def setup_exps_rllib(flow_params,
     config = deepcopy(agent_cls._default_config)
 
     config["num_workers"] = n_cpus
-    config["train_batch_size"] = horizon * n_rollouts
+    config["train_batch_size"] = horizon * n_rollouts    
+    # config["train_batch_size"] = 128
     config["gamma"] = 0.999  # discount rate
-    config["model"].update({"fcnet_hiddens": [32, 32, 32]})
+    config["model"].update({"fcnet_hiddens": [128, 64, 32]})   #for traffic lights controller
+    # config["model"].update({"fcnet_hiddens": [32,32, 32]}) 
     config["use_gae"] = True
     config["lambda"] = 0.97
-    config["kl_target"] = 0.02
+    config["kl_target"] = 0.02 # increase to increase exploration
     config["num_sgd_iter"] = 10
     config["horizon"] = horizon
+
+    # # Keep full episodes, don’t cut rollouts into fragments
+    # config["batch_mode"] = "complete_episodes"
+    # config["sample_batch_size"] = horizon          # (older RLlib)
+    # config["train_batch_size"] = horizon           # one full episode per iter
+    # config["timesteps_per_iteration"] = horizon    # older RLlib respects this
+    # config["num_workers"] = 0  
+
+    # # potential parameters to add to increase exploration
+    # config["entropy_coeff"] = 0.05  # initial value (float)
+    # config["entropy_coeff_schedule"] = [
+    #     [0, 0.05],        # start high for exploration
+    #     [2000000, 0.0]     # decay to 0 after 2M steps
+    # ]
+    # config["lr"] = 5e-4
+
 
     # save the flow params for replay
     flow_json = json.dumps(
@@ -171,6 +189,63 @@ def setup_exps_rllib(flow_params,
         config['multiagent'].update({'policies_to_train': policies_to_train})
 
     create_env, gym_name = make_create_env(params=flow_params)
+
+    # # ==========================================================
+    # # DEBUG BLOCK: which incoming edges are actually GREEN in each phase?
+    # # ==========================================================
+    # try:
+    #     env = create_env()
+    #     tl_id = "center4"  # middle node in a 3x3 grid; change if needed
+
+    #     print("\n=== DEBUG: GREEN incoming edges per phase ===")
+
+    #     # Low-level TraCI handle in Flow 0.5.x
+    #     traci_conn = env.k.kernel_api
+    #     tl = traci_conn.trafficlight
+
+    #     # What phase strings does the env expose? (fall back to 4 if unknown)
+    #     if hasattr(env, "available_tls_states") and isinstance(env.available_tls_states, (list, tuple)):
+    #         phase_states = env.available_tls_states
+    #     else:
+    #         # If your env doesn’t surface them, assume 4 phases just to inspect;
+    #         # we’ll use the current state as a template for length.
+    #         # But your earlier log showed Discrete(5), so if you want, set 5 here.
+    #         current = tl.getRedYellowGreenState(tl_id)
+    #         phase_states = [current] * 4  # adjust to 5 if you know it’s 5
+
+    #     # For each phase, set the state, then read which indices are G/g
+    #     for p, state_str in enumerate(phase_states):
+    #         try:
+    #             # Set the full RYG state string for this phase
+    #             tl.setRedYellowGreenState(tl_id, state_str)
+    #         except Exception as e:
+    #             print(f"\nPhase {p}: (could not set state explicitly: {e})")
+    #             # Still read what’s currently set
+    #         # Now read back the active state and the controlled links
+    #         active_state = tl.getRedYellowGreenState(tl_id)
+    #         controlled_links = tl.getControlledLinks(tl_id)  # list indexed same as active_state
+
+    #         # Extract incoming edges for indices where the light is green
+    #         green_incoming = []
+    #         for idx, ch in enumerate(active_state):
+    #             if ch in ("G", "g"):
+    #                 # Each entry is a list of link tuples; take the first tuple’s incoming edge
+    #                 links_for_sig = controlled_links[idx]
+    #                 if links_for_sig:
+    #                     in_edge = links_for_sig[0][0]
+    #                     green_incoming.append(in_edge)
+
+    #         print(f"\nPhase {p} (len={len(active_state)}):")
+    #         print("  active_state:", active_state)
+    #         print("  GREEN incoming edges:", sorted(set(green_incoming)))
+
+    #     env.close()
+    # except Exception as e:
+    #     print("DEBUG BLOCK FAILED:", e)
+    # # ==========================================================
+
+
+
 
     # Register as rllib env
     register_env(gym_name, create_env)
@@ -195,17 +270,13 @@ def train_rllib(submodule, flags):
 
     ray.init(num_cpus=n_cpus + 1, object_store_memory=200 * 1024 * 1024)
     exp_config = {
-        "run": alg_run,
-        "env": gym_name,
-        "config": {
-            **config
-        },
-        "checkpoint_freq": 20,
-        "checkpoint_at_end": True,
-        "max_failures": 999,
-        "stop": {
-            "training_iteration": flags.num_steps,
-        },
+        "run": alg_run,                     # "PPO"
+        "env": gym_name,                    # registered env name from make_create_env
+        "config": {**config},               # the RLlib config we prepared
+        "checkpoint_freq": 2,              # save a checkpoint every 20 iterations
+        "checkpoint_at_end": True,          # also save at the very end
+        "max_failures": 999,                # retry tolerance if workers crash
+        "stop": {"training_iteration": flags.num_steps,},
     }
 
     if flags.checkpoint_path is not None:
@@ -373,3 +444,4 @@ def main(args):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+

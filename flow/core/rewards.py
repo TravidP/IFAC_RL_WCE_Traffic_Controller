@@ -228,7 +228,7 @@ def penalize_standstill(env, gain=1):
     veh_ids = env.k.vehicle.get_ids()
     vel = np.array(env.k.vehicle.get_speed(veh_ids))
     num_standstill = len(vel[vel == 0])
-    penalty = gain * num_standstill
+    penalty = gain * num_standstill/len(veh_ids) if len(veh_ids) > 0 else 0
     return -penalty
 
 
