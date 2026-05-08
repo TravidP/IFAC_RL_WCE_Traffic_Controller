@@ -1,45 +1,112 @@
-<img src="docs/img/square_logo.png" align="right" width="25%"/>
 
-[![Build Status](https://travis-ci.com/flow-project/flow.svg?branch=master)](https://travis-ci.com/flow-project/flow)
-[![Docs](https://readthedocs.org/projects/flow/badge)](http://flow.readthedocs.org/en/latest/)
-[![Coverage Status](https://coveralls.io/repos/github/flow-project/flow/badge.svg?branch=master)](https://coveralls.io/github/flow-project/flow?branch=master)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/flow-project/flow/binder)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/flow-project/flow/blob/master/LICENSE.md)
+# Distributionally Robust Multi-Agent Reinforcement Learning for Intelligent Traffic Control
 
-# Flow
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Framework: Flow](https://img.shields.io/badge/Framework-Flow-blue.svg)](https://flow-project.github.io/)
 
-[Flow](https://flow-project.github.io/) is a computational framework for deep RL and control experiments for traffic microsimulation.
+This repository contains the official implementation of the paper:  
+**"Distributionally Robust Multi-Agent Reinforcement Learning for Intelligent Traffic Control"** *Presented at the IFAC 2026 World Congress, Busan, South Korea.*
 
-See [our website](https://flow-project.github.io/) for more information on the application of Flow to several mixed-autonomy traffic scenarios. Other [results and videos](https://sites.google.com/view/ieee-tro-flow/home) are available as well.
+**Authors:** Shuwei Pei, Joran Borger, Arda Kosay, Muhammed O. Sayin, and Saeed Ahmed.  
+**Affiliation:** Engineering and Technology Institute Groningen (ENTEG), University of Groningen.
 
-# More information
+---
 
-- [Documentation](https://flow.readthedocs.org/en/latest/)
-- [Installation instructions](http://flow.readthedocs.io/en/latest/flow_setup.html)
-- [Tutorials](https://github.com/flow-project/flow/tree/master/tutorials)
-- [Binder Build (beta)](https://mybinder.org/v2/gh/flow-project/flow/binder)
+## 📖 Project Overview
 
-# Technical questions
+Learning-based traffic signal control (TSC) algorithms often fail when encountering atypical or adversarial traffic patterns because they are typically optimized for average performance. This project introduces a **Distributionally Robust MARL (DR-MARL)** framework designed to handle traffic demand uncertainty.
 
-If you have a bug, please report it. Otherwise, join the [Flow Users group](https://join.slack.com/t/flow-users/shared_invite/enQtODQ0NDYxMTQyNDY2LTY1ZDVjZTljM2U0ODIxNTY5NTQ2MmUxMzYzNzc5NzU4ZTlmNGI2ZjFmNGU4YjVhNzE3NjcwZTBjNzIxYTg5ZmY) on Slack!  
+### Core Methodology:
+1.  **Baseline MARL**: Training agents using Proximal Policy Optimization (PPO) to manage traffic lights in a multi-agent setting.
+2.  **Contextual-Bandit Worst-Case Estimator (CB-WCE)**: A dedicated estimator that identifies the most challenging mixtures of origin-destination (OD) traffic demands.
+3.  **Robust Fine-tuning**: Improving the baseline agents by training them against the dynamically identified worst-case scenarios, resulting in a controller that excels even under extreme conditions.
 
-# Getting involved
+**Key Results:** Tested on a $3 \times 3$ Athens grid (calibrated with PNEUMA data) and a Sioux Falls network, DR-MARL achieved up to **51% shorter queues** and **38% higher speeds** compared to standard MARL under worst-case demand profiles.
 
-We welcome your contributions.
+---
 
-- Please report bugs and improvements by submitting [GitHub issue](https://github.com/flow-project/flow/issues).
-- Submit your contributions using [pull requests](https://github.com/flow-project/flow/pulls). Please use [this template](https://github.com/flow-project/flow/blob/master/.github/PULL_REQUEST_TEMPLATE.md) for your pull requests.
+## 🗂 Repository Structure
 
-# Citing Flow
+The project is built on the [Flow](https://github.com/flow-project/flow) framework, using **SUMO** for simulation and **Ray RLlib** for reinforcement learning.
 
-If you use Flow for academic research, you are highly encouraged to cite our paper:
+```text
+├── flow/                   # Core framework files (environments, networks, controllers)
+│   ├── envs/multiagent/    # Custom traffic environments for DR-MARL and CB-WCE
+│   └── networks/           # Network definitions (Athens Grid, Sioux Falls)
+├── examples/               # Execution scripts
+│   ├── train.py            # Main script for training RL policies
+│   ├── eval_marl_vs_drmarl.py # Evaluation and comparison script
+│   └── exp_configs/rl/multiagent/ # Configuration files for experiments
+├── eval_results/           # Generated metrics, CSVs, and performance plots
+├── environment.yml         # Conda environment definition
+└── requirements.txt        # Python dependencies
+```
 
-C. Wu, A. Kreidieh, K. Parvate, E. Vinitsky, A. Bayen, "Flow: Architecture and Benchmarking for Reinforcement Learning in Traffic Control," CoRR, vol. abs/1710.05465, 2017. [Online]. Available: https://arxiv.org/abs/1710.05465
+---
 
-If you use the benchmarks, you are highly encouraged to cite our paper:
+## ⚙️ Installation
 
-Vinitsky, E., Kreidieh, A., Le Flem, L., Kheterpal, N., Jang, K., Wu, F., ... & Bayen, A. M,  Benchmarks for reinforcement learning in mixed-autonomy traffic. In Conference on Robot Learning (pp. 399-409). Available: http://proceedings.mlr.press/v87/vinitsky18a.html
+### 1. Prerequisites
+- **Python 3.7+**
+- **SUMO**: Follow the [SUMO installation guide](https://sumo.dlr.de/docs/Installing.html). Ensure `SUMO_HOME` is set in your environment variables.
 
-# Contributors
+### 2. Setup Environment
+We recommend using Conda:
+```bash
+# Create and activate the environment
+conda env create -f environment.yml
+conda activate flow
 
-Flow is supported by the [Mobile Sensing Lab](http://bayen.eecs.berkeley.edu/) at UC Berkeley and Amazon AWS Machine Learning research grants. The contributors are listed in [Flow Team Page](https://flow-project.github.io/team.html).
+# Install additional dependencies
+pip install -r requirements.txt
+```
+
+---
+
+## 🚀 Usage Guide
+
+### Phase 1: Train Baseline MARL
+Train the initial traffic signal controller using standard demand distributions:
+```bash
+python examples/train.py --exp_config multiagent_traffic_light_grid
+```
+
+### Phase 2: Identify Worst-Case Scenarios (CB-WCE)
+Train the Contextual-Bandit estimator to find adversarial demand mixtures:
+```bash
+python examples/train.py --exp_config worst_estimator_training
+```
+
+### Phase 3: Robust Fine-tuning (DR-MARL)
+Fine-tune your baseline model using the worst-case distributions identified by the CB-WCE. Update your config to point to the saved baseline and estimator checkpoints, then run:
+```bash
+python examples/train.py --exp_config multiagent_traffic_light_grid_robust
+```
+
+### Phase 4: Evaluation
+Compare the Baseline MARL and DR-MARL across different traffic demand groups:
+```bash
+python examples/eval_marl_vs_drmarl.py
+```
+Results (plots and raw CSVs) will be saved in the `eval_results/` directory.
+
+---
+
+## 📝 Citation
+
+If you use this code or refer to our findings, please cite our work:
+
+```bibtex
+@inproceedings{pei2026drmarl,
+  title={Distributionally Robust Multi-Agent Reinforcement Learning for Intelligent Traffic Control},
+  author={Pei, Shuwei and Borger, Joran and Kosay, Arda and Sayin, Muhammed O. and Ahmed, Saeed},
+  booktitle={IFAC World Congress},
+  year={2026},
+  address={Busan, South Korea}
+}
+```
+
+---
+
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
